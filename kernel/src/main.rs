@@ -2,7 +2,7 @@
 #![no_main]
 mod font;
 mod framebuffer;
-use framebuffer::draw_str;
+use framebuffer::Writer;
 use limine::request::FramebufferRequest;
 #[unsafe(link_section = ".requests")]
 static FRAMEBUFFER: FramebufferRequest = FramebufferRequest::new();
@@ -21,7 +21,8 @@ pub extern "C" fn _start() -> ! {
 
             let ptr = fb.address() as *mut u32;
             
-            draw_str(ptr, fb.pitch, fb.bpp, 10, 10 , "K-ernel");
+            let mut writer: Writer = Writer::new(ptr, fb.pitch, fb.bpp, 0, 0, fb.width as usize, fb.height as usize);
+            writer.print("K-ernel");
         }
     }
 
