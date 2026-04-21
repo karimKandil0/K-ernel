@@ -17,8 +17,19 @@ impl Writer {
 
     pub fn print(&mut self, s: &str) {
         for char in s.bytes() {
-            draw_char(self.ptr, self.pitch, self.bpp, self.x, self.y, char);
+            if char == b'\n' {
+                self.y += 16;
+                self.x = 0;
+                continue
+            } else {
+                draw_char(self.ptr, self.pitch, self.bpp, self.x, self.y, char);
+            }
             self.x += 8;
+            if self.x + 8 >= self.width {
+                self.y += 16;
+                self.x = 0;
+                continue
+            }
         }
     }
 }

@@ -28,7 +28,7 @@ pub extern "C" fn _start() -> ! {
                 WRITER = Some(writer);
             }
             
-            print!("K-ernel says: fuck you");
+            print!("K-ernel says:\nfuck you");
         }
     }
 
