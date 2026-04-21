@@ -1,5 +1,6 @@
 #![no_std]
 #![no_main]
+mod gdt;
 mod font;
 mod framebuffer;
 use framebuffer::Writer;
@@ -16,6 +17,8 @@ fn panic_handler(_info: &core::panic::PanicInfo) -> ! {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn _start() -> ! {
+
+    gdt::init();
 
     if let Some(response) = FRAMEBUFFER.response() {
 
