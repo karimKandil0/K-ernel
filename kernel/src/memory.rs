@@ -1,12 +1,14 @@
 use limine::request::MemmapRequest;
 use limine::memmap::MEMMAP_USABLE;
+use x86_64::structures::paging::{FrameAllocator as X86FrameAllocator, PhysFrame, Size4KiB};
+use x86_64::PhysAddr;
 use crate::print;
 use crate::WRITER;
 
 #[unsafe(link_section = ".requests")]
 static MEMORY_MAP: MemmapRequest = MemmapRequest::new();
 
-struct FrameAllocator {
+pub struct FrameAllocator {
     regions: &'static [&'static limine::memmap::Entry],
     current_region: usize,
     current_offset: u64
@@ -42,6 +44,13 @@ impl FrameAllocator {
             self.current_offset = 0
         }
         Some(address)
+    }
+}
+
+unsafe impl X86FrameAllocator<Size4KiB> for FrameAllocator {
+    fn allocate_frame(&mut self) -> Option<PhysFrame> {
+        let addr = self.allocate()?;
+        Some(PhysFrame::containing_address(PhysAddr::new(addr)))
     }
 }
 
