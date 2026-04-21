@@ -15,7 +15,8 @@ iso: build
 	mcopy -i efi.img iso_root/EFI/BOOT/BOOTX64.EFI ::/EFI/BOOT/
 	mcopy -i efi.img kernel/limine.conf ::/
 	mcopy -i efi.img iso_root/kernel ::/kernel
-	xorriso -as mkisofs -isohybrid-gpt-basdat -o kernel.iso -e efi.img -no-emul-boot -efi-boot-part --efi-boot-image efi.img
+	cp efi.img iso_root/EFI/BOOT/efi.img
+	xorriso -as mkisofs -isohybrid-gpt-basdat -o kernel.iso -e EFI/BOOT/efi.img -no-emul-boot -efi-boot-part --efi-boot-image iso_root/EFI/BOOT/efi.img iso_root/
 
 run: iso
 	qemu-system-x86_64 -M q35 -m 256M -vga std -bios /nix/store/z5yzn2d9s4k12vwr34h8bvgfi1p015ql-OVMF-202508.01-fd/FV/OVMF.fd -drive format=raw,file=kernel.iso -display gtk
