@@ -1,6 +1,8 @@
 #![no_std]
 #![no_main]
+#![feature(abi_x86_interrupt)]
 mod gdt;
+mod idt;
 mod font;
 mod framebuffer;
 use framebuffer::Writer;
@@ -8,7 +10,7 @@ use limine::request::FramebufferRequest;
 #[unsafe(link_section = ".requests")]
 static FRAMEBUFFER: FramebufferRequest = FramebufferRequest::new();
 
-static mut WRITER: Option<Writer> = None;
+pub static mut WRITER: Option<Writer> = None;
 
 #[panic_handler]
 fn panic_handler(_info: &core::panic::PanicInfo) -> ! {
@@ -19,6 +21,7 @@ fn panic_handler(_info: &core::panic::PanicInfo) -> ! {
 pub extern "C" fn _start() -> ! {
 
     gdt::init();
+    idt::init();
 
     if let Some(response) = FRAMEBUFFER.response() {
 
