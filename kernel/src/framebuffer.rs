@@ -22,3 +22,10 @@ impl Writer {
         }
     }
 }
+
+impl core::fmt::Write for Writer {
+    fn write_str(&mut self, s: &str) -> core::fmt::Result {
+        self.print(s);
+        Ok(())
+    }
+}
