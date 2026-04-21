@@ -5,6 +5,7 @@ mod gdt;
 mod idt;
 mod font;
 mod framebuffer;
+mod memory;
 use framebuffer::Writer;
 use limine::request::FramebufferRequest;
 #[unsafe(link_section = ".requests")]
@@ -34,9 +35,11 @@ pub extern "C" fn _start() -> ! {
                 WRITER = Some(writer);
             }
             
-            print!("K-ernel says:\nfuck you");
+            print!("K-ernel.\n");
         }
     }
+
+    memory::init();
 
     loop { }
 }
