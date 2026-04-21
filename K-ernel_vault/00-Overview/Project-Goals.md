@@ -4,7 +4,7 @@ Building a kernel in Rust from scratch. Goal is understanding, not production us
 
 ## What we're building
 - Bare metal x86_64 kernel
-- Boots via QEMU + multiboot2
+- Boots via QEMU + Limine
 - VGA text output
 - Interrupt handling
 - Memory management (paging + heap)
@@ -19,6 +19,6 @@ Building a kernel in Rust from scratch. Goal is understanding, not production us
 
 ## Target
 - Architecture: x86_64
-- Bootloader: multiboot2
+- Bootloader: Limine
 - Emulator: QEMU
 - Language: Rust (no_std)

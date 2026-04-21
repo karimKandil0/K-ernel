@@ -32,9 +32,9 @@
           rustToolchain
 
           # Build tools
-          pkgs.grub2                  # grub-mkrescue
-          pkgs.xorriso                # required by grub-mkrescue to build ISOs
-          pkgs.nasm                   # assembler (for boot.asm)
+          pkgs.limine                 # Limine bootloader + limine-deploy
+          pkgs.xorriso                # ISO creation (used by limine)
+          pkgs.nasm                   # assembler (may still be needed for stubs)
 
           # Emulation & debugging
           pkgs.qemu                   # qemu-system-x86_64
