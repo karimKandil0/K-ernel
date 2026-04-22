@@ -12,7 +12,7 @@ pub fn draw_char(ptr: *mut u32, pitch: u64, bpp: u16, x: usize, y: usize, c: u8)
                 let py = y + row_idx;
                 let offset = (py * pitch as usize + px * (bpp as usize / 8)) / 4;
                 unsafe {
-                    ptr.add(offset).write_volatile(0x00FF0000);
+                    ptr.add(offset).write_volatile(0x00FFFFFF);
                 }
            }
         }

@@ -12,6 +12,7 @@ mod idt;
 mod keyboard;
 mod memory;
 mod paging;
+mod shell;
 
 use framebuffer::Writer;
 use limine::request::FramebufferRequest;
@@ -49,6 +50,7 @@ pub extern "C" fn _start() -> ! {
     // Memory subsystem — frame allocator + heap mapping
     memory::init();
     paging::init();
+    shell::init();
 
     loop {}
 }

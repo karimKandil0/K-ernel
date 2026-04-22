@@ -14,7 +14,7 @@ pub static mut PICS: ChainedPics = unsafe { ChainedPics::new(PIC_1_OFFSET, PIC_2
 // PS/2 Set 1 scancode → ASCII lookup table.
 // Index = scancode (make code only, < 128). Value = ASCII byte. 0 = non-printable.
 const SCANCODE_MAP: [u8; 58] = [
-    0,    0,    b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9', b'0', b'-', b'=', 0,
+    0,    0,    b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9', b'0', b'-', b'=', 0x08,
     0,    b'q', b'w', b'e', b'r', b't', b'y', b'u', b'i', b'o', b'p', b'[', b']', b'\n',
     0,    b'a', b's', b'd', b'f', b'g', b'h', b'j', b'k', b'l', b';', b'\'', b'`',
     0,    b'\\',b'z', b'x', b'c', b'v', b'b', b'n', b'm', b',', b'.', b'/', 0,   0,   0,   b' ',
@@ -32,7 +32,11 @@ pub extern "x86-interrupt" fn keyboard_handler(_frame: InterruptStackFrame) {
         if scancode < 128 && (scancode as usize) < SCANCODE_MAP.len() {
             let ascii = SCANCODE_MAP[scancode as usize];
             if ascii != 0 {
-                print!("{}", ascii as char);
+                if ascii == b'\n' {
+                    crate::shell::handle_char(b'\n');
+                } else {
+                    crate::shell::handle_char(ascii);
+                }
             }
         }
 

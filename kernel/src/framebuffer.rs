@@ -56,6 +56,24 @@ impl Writer {
         }
     }
 
+    pub fn backspace(&mut self) {
+        self.clear_cursor();
+        if self.x >= 8 {
+            self.x -=8;
+        }
+
+        let row_size = (self.pitch / 4) as usize;
+        unsafe {
+            for row in 0..16 {
+                for col in 0..8 {
+                    let dst = ((self.y + row) * row_size + self.x + col) as isize;
+                    self.ptr.offset(dst).write_volatile(0x00000000);
+                }
+            }
+        }
+        self.draw_cursor();
+    }
+
     pub fn print(&mut self, s: &str) {
         self.clear_cursor();
         for char in s.bytes() {
