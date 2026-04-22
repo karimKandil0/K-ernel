@@ -11,6 +11,7 @@ mod gdt;
 mod idt;
 mod memory;
 mod paging;
+mod keyboard;
 
 use framebuffer::Writer;
 use limine::request::FramebufferRequest;
@@ -30,6 +31,8 @@ fn panic_handler(_info: &core::panic::PanicInfo) -> ! {
 pub extern "C" fn _start() -> ! {
     gdt::init();
     idt::init();
+    keyboard::init();
+    x86_64::instructions::interrupts::enable();
 
     if let Some(response) = FRAMEBUFFER.response() {
         if let Some(fb) = response.framebuffers().first() {
@@ -37,8 +40,10 @@ pub extern "C" fn _start() -> ! {
             let writer = Writer::new(ptr, fb.pitch, fb.bpp, 0, 0, fb.width as usize, fb.height as usize);
             unsafe { WRITER = Some(writer); }
             print!("K-ernel.\n");
+            print!("h={}", fb.height);
         }
     }
+
 
     memory::init();
     paging::init();

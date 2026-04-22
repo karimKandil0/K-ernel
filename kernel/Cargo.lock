@@ -25,6 +25,7 @@ name = "kernel"
 version = "0.1.0"
 dependencies = [
  "limine",
+ "pic8259",
  "x86_64",
 ]
 
@@ -33,6 +34,15 @@ name = "limine"
 version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "90b240f611eba0b43bf3e97478d87f12322c6c0f540bdad885c3e8c4a0d57333"
+
+[[package]]
+name = "pic8259"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "62d9a86c292b165f757e47e7fd66855def189b2564609bc4203727b27c33db22"
+dependencies = [
+ "x86_64",
+]
 
 [[package]]
 name = "rustversion"

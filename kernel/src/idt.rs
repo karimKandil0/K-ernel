@@ -36,6 +36,7 @@ pub fn init() {
         idt.page_fault.set_handler_fn(page_fault_handler);
         idt.general_protection_fault.set_handler_fn(general_protection_fault_handler);
         idt.invalid_opcode.set_handler_fn(invalid_opcode_handler);
+        idt[33].set_handler_fn(crate::keyboard::keyboard_handler);
         IDT = Some(idt);
         if let Some(ref i) = IDT {
             i.load();
