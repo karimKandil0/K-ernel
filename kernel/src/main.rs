@@ -9,17 +9,18 @@ mod font;
 mod framebuffer;
 mod gdt;
 mod idt;
+mod keyboard;
 mod memory;
 mod paging;
-mod keyboard;
 
 use framebuffer::Writer;
 use limine::request::FramebufferRequest;
-use alloc::vec::Vec;
 
+// Limine framebuffer request — filled before _start runs
 #[unsafe(link_section = ".requests")]
 static FRAMEBUFFER: FramebufferRequest = FramebufferRequest::new();
 
+// Global writer — None until framebuffer is initialized
 pub static mut WRITER: Option<Writer> = None;
 
 #[panic_handler]
@@ -29,33 +30,30 @@ fn panic_handler(_info: &core::panic::PanicInfo) -> ! {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn _start() -> ! {
+    // CPU infrastructure — must come first
     gdt::init();
     idt::init();
     keyboard::init();
     x86_64::instructions::interrupts::enable();
 
+    // Initialize framebuffer writer
     if let Some(response) = FRAMEBUFFER.response() {
         if let Some(fb) = response.framebuffers().first() {
             let ptr = fb.address() as *mut u32;
             let writer = Writer::new(ptr, fb.pitch, fb.bpp, 0, 0, fb.width as usize, fb.height as usize);
             unsafe { WRITER = Some(writer); }
-            print!("K-ernel.\n");
-            print!("h={}", fb.height);
+            print!("K-ernel\n");
         }
     }
 
-
+    // Memory subsystem — frame allocator + heap mapping
     memory::init();
     paging::init();
-
-    let mut v: Vec<u32> = Vec::new();
-    v.push(1);
-    v.push(2);
-    print!("heap works: {}\n", v[0]);
 
     loop {}
 }
 
+// print! macro — writes formatted text through the global Writer
 #[macro_export]
 macro_rules! print {
     ($($arg:tt)*) => {
