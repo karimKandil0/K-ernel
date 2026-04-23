@@ -8,6 +8,7 @@ mod arch;
 mod drivers;
 mod memory;
 mod shell;
+mod sync;
 
 use drivers::framebuffer::Writer;
 use limine::request::FramebufferRequest;
