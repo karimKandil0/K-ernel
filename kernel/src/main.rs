@@ -8,6 +8,7 @@ mod arch;
 mod drivers;
 mod memory;
 mod shell;
+mod storage;
 mod sync;
 
 use drivers::framebuffer::Writer;
@@ -21,7 +22,8 @@ static FRAMEBUFFER: FramebufferRequest = FramebufferRequest::new();
 pub static mut WRITER: Option<Writer> = None;
 
 #[panic_handler]
-fn panic_handler(_info: &core::panic::PanicInfo) -> ! {
+fn panic_handler(info: &core::panic::PanicInfo) -> ! {
+    print!("\nPANIC: {}\n", info);
     loop {}
 }
 
@@ -46,6 +48,17 @@ pub extern "C" fn _start() -> ! {
     // Memory subsystem — frame allocator + heap mapping
     memory::frame_allocator::init();
     memory::paging::init();
+
+    // Storage — find AHCI controller, init first SATA port
+    unsafe {
+        if let Some(dev) = storage::pci::find_ahci() {
+            print!("pci: AHCI found at bus={} device={}\n", dev.bus, dev.device);
+            storage::ahci::find_and_init(&dev);
+        } else {
+            print!("pci: no AHCI controller found\n");
+        }
+    }
+
     shell::init();
 
     loop {}

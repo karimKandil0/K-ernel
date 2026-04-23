@@ -18,5 +18,14 @@ iso: build
 	cp efi.img iso_root/EFI/BOOT/efi.img
 	xorriso -as mkisofs -isohybrid-gpt-basdat -o kernel.iso -e EFI/BOOT/efi.img -no-emul-boot -efi-boot-part --efi-boot-image iso_root/EFI/BOOT/efi.img iso_root/
 
-run: iso
-	qemu-system-x86_64 -M q35 -m 256M -vga std -bios /nix/store/z5yzn2d9s4k12vwr34h8bvgfi1p015ql-OVMF-202508.01-fd/FV/OVMF.fd -drive format=raw,file=kernel.iso -display gtk
+disk.img:
+	dd if=/dev/zero of=disk.img bs=1M count=64
+
+run: iso disk.img
+	qemu-system-x86_64 -M q35 -m 256M -vga std \
+		-bios /nix/store/z5yzn2d9s4k12vwr34h8bvgfi1p015ql-OVMF-202508.01-fd/FV/OVMF.fd \
+		-drive format=raw,file=kernel.iso \
+		-drive if=none,format=raw,file=disk.img,id=disk0 \
+		-device ich9-ahci,id=ahci \
+		-device ide-hd,drive=disk0,bus=ahci.0 \
+		-display gtk
