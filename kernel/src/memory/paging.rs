@@ -39,6 +39,7 @@ pub fn init() {
         unsafe {
             if let Some(ref mut allocator) = FRAME_ALLOCATOR {
                 map_heap(&mut mapper, allocator);
+                crate::memory::heap::ALLOCATOR.init(HEAP_START as usize, HEAP_SIZE as usize);
             }
         }
     }

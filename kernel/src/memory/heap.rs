@@ -1,50 +1,124 @@
 use core::alloc::{GlobalAlloc, Layout};
-use core::sync::atomic::{AtomicU64, Ordering};
+use core::mem::{size_of, align_of};
+use crate::sync::mutex::Mutex;
 
-const HEAP_START: u64 = 0xFFFF_C000_0000_0000;
-const HEAP_SIZE: u64 = 1024 * 1024; // 1MB
+struct FreeBlock {
+    size: usize,
+    next: *mut FreeBlock,
+}
+
+pub struct LinkedListAllocator {
+    head: Mutex<*mut FreeBlock>,
+}
+
+unsafe impl Send for LinkedListAllocator {}
+unsafe impl Sync for LinkedListAllocator {}
 
 #[global_allocator]
-static ALLOCATOR: BumpAllocator = BumpAllocator::new(HEAP_START, HEAP_START + HEAP_SIZE);
+pub static ALLOCATOR: LinkedListAllocator = LinkedListAllocator::new();
 
-// Simple bump allocator — advances a pointer on each allocation.
-// Cannot free memory. Suitable for bootstrapping until a proper allocator is needed.
-pub struct BumpAllocator {
-    start: u64,
-    end: u64,
-    next: AtomicU64, // AtomicU64 required for Sync — Cell<u64> is not Sync
-}
+impl LinkedListAllocator {
+    pub const fn new() -> Self {
+        LinkedListAllocator {
+            head: Mutex::new(core::ptr::null_mut()),
+        }
+    }
 
-impl BumpAllocator {
-    pub const fn new(start: u64, end: u64) -> Self {
-        BumpAllocator {
-            start,
-            end,
-            next: AtomicU64::new(start),
+    pub unsafe fn init(&self, heap_start: usize, heap_size: usize) {
+        unsafe {
+            let block = heap_start as *mut FreeBlock;
+            (*block).size = heap_size;
+            (*block).next = core::ptr::null_mut();
+            *self.head.lock() = block;
         }
     }
 }
 
-unsafe impl GlobalAlloc for BumpAllocator {
+fn required_size(layout: Layout) -> usize {
+    let min = layout.size().max(size_of::<FreeBlock>());
+    align_up(min, align_of::<FreeBlock>())
+}
+
+unsafe impl GlobalAlloc for LinkedListAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        // Align the current pointer up to the required alignment
-        let alloc_start = align_up(self.next.load(Ordering::Relaxed), layout.align() as u64);
-        let alloc_end = alloc_start + layout.size() as u64;
+        let required = required_size(layout);
+        let mut head = self.head.lock();
+        let mut current = *head as *mut FreeBlock;
+        let mut prev: *mut FreeBlock = core::ptr::null_mut();
 
-        if alloc_end > self.end {
-            core::ptr::null_mut() // Out of memory
-        } else {
-            self.next.store(alloc_end, Ordering::Relaxed);
-            alloc_start as *mut u8
+        while !current.is_null() {
+            if (*current).size >= required {
+                let remainder = (*current).size - required;
+                if remainder >= size_of::<FreeBlock>() {
+                    // Block is big enough to split — carve off the front, leave remainder
+                    let new_block = (current as usize + required) as *mut FreeBlock;
+                    (*new_block).size = remainder;
+                    (*new_block).next = (*current).next;
+                    if prev.is_null() {
+                        *head = new_block;
+                    } else {
+                        (*prev).next = new_block;
+                    }
+                } else {
+                    // Remainder too small for a header — give the whole block
+                    if prev.is_null() {
+                        *head = (*current).next;
+                    } else {
+                        (*prev).next = (*current).next;
+                    }
+                }
+                return current as *mut u8;
+            }
+            prev = current;
+            current = (*current).next;
         }
+
+        core::ptr::null_mut() // OOM
     }
 
-    unsafe fn dealloc(&self, _ptr: *mut u8, _layout: Layout) {
-        // Bump allocator cannot free — no-op
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+        let size = required_size(layout);
+        let new_block = ptr as *mut FreeBlock;
+        (*new_block).size = size;
+        (*new_block).next = core::ptr::null_mut();
+
+        let mut head = self.head.lock();
+        let mut current = *head;
+        let mut prev: *mut FreeBlock = core::ptr::null_mut();
+
+        // Walk to find insertion point sorted by address
+        while !current.is_null() && (current as usize) < (new_block as usize) {
+            prev = current;
+            current = (*current).next;
+        }
+
+        // Insert new_block between prev and current
+        (*new_block).next = current;
+        if prev.is_null() {
+            *head = new_block;
+        } else {
+            (*prev).next = new_block;
+        }
+
+        // Coalesce with next neighbor
+        if !(*new_block).next.is_null() {
+            let next = (*new_block).next;
+            if new_block as usize + (*new_block).size == next as usize {
+                (*new_block).size += (*next).size;
+                (*new_block).next = (*next).next;
+            }
+        }
+
+        // Coalesce with prev neighbor
+        if !prev.is_null() {
+            if prev as usize + (*prev).size == new_block as usize {
+                (*prev).size += (*new_block).size;
+                (*prev).next = (*new_block).next;
+            }
+        }
     }
 }
 
-// Round addr up to the next multiple of align (align must be a power of 2)
-fn align_up(addr: u64, align: u64) -> u64 {
+fn align_up(addr: usize, align: usize) -> usize {
     (addr + align - 1) & !(align - 1)
 }
