@@ -2,7 +2,7 @@ use limine::request::HhdmRequest;
 use x86_64::registers::control::Cr3;
 use x86_64::structures::paging::{Mapper, OffsetPageTable, Page, PageTable, PageTableFlags, Size4KiB};
 use x86_64::VirtAddr;
-use crate::memory::FRAME_ALLOCATOR;
+use crate::memory::frame_allocator::FRAME_ALLOCATOR;
 
 // Limine HHDM request — Limine maps all physical RAM at a fixed virtual offset.
 // We store this offset to convert physical addresses → virtual for page table access.

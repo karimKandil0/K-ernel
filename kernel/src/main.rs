@@ -4,17 +4,12 @@
 
 extern crate alloc;
 
-mod allocator;
-mod font;
-mod framebuffer;
-mod gdt;
-mod idt;
-mod keyboard;
+mod arch;
+mod drivers;
 mod memory;
-mod paging;
 mod shell;
 
-use framebuffer::Writer;
+use drivers::framebuffer::Writer;
 use limine::request::FramebufferRequest;
 
 // Limine framebuffer request — filled before _start runs
@@ -32,9 +27,9 @@ fn panic_handler(_info: &core::panic::PanicInfo) -> ! {
 #[unsafe(no_mangle)]
 pub extern "C" fn _start() -> ! {
     // CPU infrastructure — must come first
-    gdt::init();
-    idt::init();
-    keyboard::init();
+    arch::x86_64::gdt::init();
+    arch::x86_64::idt::init();
+    drivers::keyboard::init();
     x86_64::instructions::interrupts::enable();
 
     // Initialize framebuffer writer
@@ -48,8 +43,8 @@ pub extern "C" fn _start() -> ! {
     }
 
     // Memory subsystem — frame allocator + heap mapping
-    memory::init();
-    paging::init();
+    memory::frame_allocator::init();
+    memory::paging::init();
     shell::init();
 
     loop {}
@@ -60,7 +55,7 @@ pub extern "C" fn _start() -> ! {
 macro_rules! print {
     ($($arg:tt)*) => {
         unsafe {
-            if let Some(ref mut w) = WRITER {
+            if let Some(ref mut w) = crate::WRITER {
                 use core::fmt::Write;
                 let _ = w.write_fmt(format_args!($($arg)*));
             }

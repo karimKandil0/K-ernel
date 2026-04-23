@@ -1,3 +1,5 @@
+mod commands;
+
 use alloc::vec::Vec;
 use crate::print;
 use crate::WRITER;
@@ -30,14 +32,7 @@ impl Shell {
     pub fn execute(&mut self) {
         let cmd = core::str::from_utf8(&self.buffer).unwrap_or("");
         let cmd = cmd.trim();
-
-        match cmd {
-            "help" => print!("\ncommand: help, clear, echo\n"),
-            "clear" => { /* clear screen - todo */},
-            _ if cmd.starts_with("echo ") => print!("\n{}\n", &cmd[5..]),
-            _ => print!("\nunknown command: {}\n", cmd),
-        }
-
+        commands::dispatch(cmd);
         self.buffer.clear();
         print!("\n> ")
     }

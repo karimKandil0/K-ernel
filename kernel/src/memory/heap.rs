@@ -1,6 +1,8 @@
 use core::alloc::{GlobalAlloc, Layout};
 use core::sync::atomic::{AtomicU64, Ordering};
-use crate::paging::{HEAP_START, HEAP_SIZE};
+
+const HEAP_START: u64 = 0xFFFF_C000_0000_0000;
+const HEAP_SIZE: u64 = 1024 * 1024; // 1MB
 
 #[global_allocator]
 static ALLOCATOR: BumpAllocator = BumpAllocator::new(HEAP_START, HEAP_START + HEAP_SIZE);

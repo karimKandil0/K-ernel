@@ -1,4 +1,4 @@
-use crate::font::draw_char;
+use crate::drivers::font::draw_char;
 
 pub struct Writer {
     ptr: *mut u32,
@@ -71,6 +71,22 @@ impl Writer {
                 }
             }
         }
+        self.draw_cursor();
+    }
+
+    pub fn clear(&mut self) {
+        self.clear_cursor();
+        let row_size = (self.pitch / 4) as usize;
+        unsafe {
+            for row in 0..self.height {
+                for col in 0..self.width {
+                    let dst = (row * row_size + col) as isize;
+                    self.ptr.offset(dst).write_volatile(0x00000000);
+                }
+            }
+        }
+        self.x = 0;
+        self.y = 0;
         self.draw_cursor();
     }
 
