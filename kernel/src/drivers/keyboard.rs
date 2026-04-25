@@ -25,6 +25,12 @@ const SCANCODE_MAP: [u8; 58] = [
 // Must send EOI (end of interrupt) or PIC will not fire further interrupts.
 pub extern "x86-interrupt" fn keyboard_handler(_frame: InterruptStackFrame) {
     unsafe {
+        let mut status: PortReadOnly<u8> = PortReadOnly::new(0x64);
+        if status.read() & 0x01 == 0 {
+            let pics = addr_of_mut!(PICS);
+            (*pics).notify_end_of_interrupt(33);
+            return;
+        }
         let mut port: PortReadOnly<u8> = PortReadOnly::new(0x60);
         let scancode: u8 = port.read();
 

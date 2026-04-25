@@ -2,7 +2,7 @@ use x86_64::instructions::port::Port;
 
 pub fn dispatch(cmd: &str) {
     match cmd {
-        "help" => crate::print!("\ncommands: help, clear, echo\n"),
+        "help" => crate::print!("\ncommands: help, clear, echo, reboot, diskread, ls, cat\n"),
         "clear" => {
             unsafe {
                 if let Some(ref mut w) = crate::WRITER {
@@ -33,6 +33,8 @@ pub fn dispatch(cmd: &str) {
                 }
             }
         }
+        "ls" => unsafe { crate::storage::fat::ls(); },
+        _ if cmd.starts_with("cat ") => unsafe { crate::storage::fat::cat(&cmd[4..]); },
         _ if cmd.starts_with("echo ") => crate::print!("\n{}\n", &cmd[5..]),
         _ => crate::print!("\nunknown command: {}\n", cmd),
     }
