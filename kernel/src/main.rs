@@ -10,6 +10,7 @@ mod memory;
 mod shell;
 mod storage;
 mod sync;
+mod scheduler;
 
 use drivers::framebuffer::Writer;
 use limine::request::FramebufferRequest;
@@ -32,6 +33,7 @@ pub extern "C" fn _start() -> ! {
     // CPU infrastructure — must come first
     arch::x86_64::gdt::init();
     arch::x86_64::idt::init();
+    arch::x86_64::pit::init();
     drivers::keyboard::init();
     x86_64::instructions::interrupts::enable();
 

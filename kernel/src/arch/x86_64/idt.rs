@@ -28,6 +28,13 @@ extern "x86-interrupt" fn invalid_opcode_handler(stack_frame: InterruptStackFram
     loop { }
 }
 
+pub extern "x86-interrupt" fn timer_handler(_frame: InterruptStackFrame) {
+    unsafe {
+        let pics = core::ptr::addr_of_mut!(crate::drivers::keyboard::PICS);
+        (*pics).notify_end_of_interrupt(32);
+    }
+}
+
 pub fn init() {
     unsafe {
         let mut idt = InterruptDescriptorTable::new();
@@ -37,6 +44,7 @@ pub fn init() {
         idt.general_protection_fault.set_handler_fn(general_protection_fault_handler);
         idt.invalid_opcode.set_handler_fn(invalid_opcode_handler);
         idt[33].set_handler_fn(crate::drivers::keyboard::keyboard_handler);
+        idt[32].set_handler_fn(timer_handler);
         IDT = Some(idt);
         if let Some(ref i) = IDT {
             i.load();

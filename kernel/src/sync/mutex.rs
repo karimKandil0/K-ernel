@@ -54,3 +54,4 @@ impl<T> Drop for MutexGuard<'_, T> {
 }
 
 unsafe impl<T: Send> Send for Mutex<T> {}
+unsafe impl<T: Send> Sync for Mutex<T> {}

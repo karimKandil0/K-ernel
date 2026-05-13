@@ -15,7 +15,7 @@ struct Bpb {
 
 unsafe fn read_bpb() -> Result<Bpb, ()> {
     let mut buf = [0u8; 512];
-    read_sector(0, &mut buf).map_err(|_| ())?;
+    unsafe { read_sector(0, &mut buf).map_err(|_| ())? };
 
     if buf[510] != 0x55 || buf[511] != 0xAA {
         return Err(());
@@ -44,7 +44,7 @@ unsafe fn next_cluster(bpb: &Bpb, cluster: u32) -> Result<Option<u32>, ()> {
     let offset = (byte_offset % 512) as usize;
 
     let mut buf = [0u8; 512];
-    read_sector(sector, &mut buf).map_err(|_| ())?;
+    unsafe { read_sector(sector, &mut buf).map_err(|_| ())? };
 
     let val = u32::from_le_bytes([
         buf[offset],
@@ -68,11 +68,11 @@ unsafe fn read_chain(bpb: &Bpb, start_cluster: u32, size: u32) -> Result<Vec<u8>
         let sector = cluster_to_sector(bpb, cluster);
         for i in 0..bpb.sectors_per_cluster as u64 {
             let mut buf = [0u8; 512];
-            read_sector(sector + i, &mut buf).map_err(|_| ())?;
+            unsafe { read_sector(sector + i, &mut buf).map_err(|_| ())? };
             data.extend_from_slice(&buf);
         }
 
-        match next_cluster(bpb, cluster)? {
+        match unsafe { next_cluster(bpb, cluster)? } {
             Some(next) => cluster = next,
             None => break,
         }
@@ -86,12 +86,12 @@ unsafe fn read_chain(bpb: &Bpb, start_cluster: u32, size: u32) -> Result<Vec<u8>
 }
 
 pub unsafe fn ls() {
-    let bpb = match read_bpb() {
+    let bpb = match unsafe { read_bpb() } {
         Ok(b) => b,
         Err(_) => { print!("\nls: disk not formatted as FAT32\n"); return; }
     };
 
-    let data = match read_chain(&bpb, bpb.root_cluster, 0) {
+    let data = match unsafe { read_chain(&bpb, bpb.root_cluster, 0) } {
         Ok(d) => d,
         Err(_) => { print!("\nls: failed to read root dir\n"); return; }
     };
@@ -125,12 +125,12 @@ pub unsafe fn ls() {
 }
 
 pub unsafe fn cat(name: &str) {
-    let bpb = match read_bpb() {
+    let bpb = match unsafe { read_bpb() } {
         Ok(b) => b,
         Err(_) => { print!("\ncat: disk not formatted as FAT32\n"); return; }
     };
 
-    let dir = match read_chain(&bpb, bpb.root_cluster, 0) {
+    let dir = match unsafe { read_chain(&bpb, bpb.root_cluster, 0) } {
         Ok(d) => d,
         Err(_) => { print!("\ncat: failed to read root dir\n"); return; }
     };
@@ -159,7 +159,7 @@ pub unsafe fn cat(name: &str) {
                         |  u16::from_le_bytes([entry[26], entry[27]]) as u32;
             let size = u32::from_le_bytes([entry[28], entry[29], entry[30], entry[31]]);
 
-            match read_chain(&bpb, cluster, size) {
+            match unsafe { read_chain(&bpb, cluster, size) } {
                 Ok(data) => {
                     print!("\n");
                     if let Ok(s) = core::str::from_utf8(&data) {
