@@ -3,3 +3,4 @@ iso_root/
 kernel.iso
 efi.img
 disk.img
+kernel/target/
